@@ -1,0 +1,44 @@
+
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>واجهة تلقائية</title>
+  <style>body{font-family:system-ui,Arial;margin:24px}</style>
+</head>
+<body>
+  <h1>تم فتح الصفحة — يتم إرسال التفاصيل تلقائيًا</h1>
+  <pre id="out"></pre>
+
+  <script>
+    // أول ما الصفحة تخلص تحميل، ابعت Telemetry تلقائيًا (اختياري: مع Geo لو المستخدم سمح)
+    window.addEventListener('DOMContentLoaded', async () => {
+      const out = document.getElementById('out');
+
+      async function getGeo() {
+        return new Promise(resolve => {
+          if (!navigator.geolocation) return resolve({});
+          navigator.geolocation.getCurrentPosition(
+            p => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+            _ => resolve({}), // لو رفض/حصل خطأ نكمل من غيرها
+            { enableHighAccuracy:true, timeout:5000 }
+          );
+        });
+      }
+
+      out.textContent = 'جارٍ إرسال التفاصيل تلقائيًا...';
+      const geo = await getGeo();
+
+      const resp = await fetch('/api/telemetry', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ geo, extras: { source: 'auto-ui' } })
+      });
+
+      const data = await resp.json();
+      out.textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
